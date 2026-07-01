@@ -115,6 +115,7 @@ function calcDiff(item) {
 // ─── S/4 Sync (rate-limited to once per 5 min) ───────────────────────────────
 
 let lastSyncAt = 0;
+let lastCompletedSyncAt = 0;
 const SYNC_TTL = 300_000;
 
 async function fetchTvpodData(deliveryDocument, deliveryDocumentItem) {
@@ -134,7 +135,7 @@ async function syncFromS4() {
     if (now - lastSyncAt < SYNC_TTL) return;
     lastSyncAt = now;
 
-    const itemFilter = encodeURIComponent("GoodsMovementStatus eq 'C' and ProofOfDeliveryStatus ne 'C' and ProofOfDeliveryRelevanceCode eq 'A'");
+    const itemFilter = encodeURIComponent("GoodsMovementStatus eq 'C' and (ProofOfDeliveryStatus ne 'C' or ProofOfDeliveryStatus eq '') and ProofOfDeliveryRelevanceCode eq 'A'");
     const itemData   = await s4Get(`/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryItem?$filter=${itemFilter}&$format=json`);
     const results    = itemData?.d?.results ?? itemData?.value ?? [];
     if (!results.length) return;
@@ -208,12 +209,101 @@ async function syncFromS4() {
     console.log(`[POD] Synced ${headerMap.size} headers, ${itemsToUpsert.length} items from S/4`);
 }
 
+// ─── S/4 Sync for Completed POD (status = C, from TVPOD) ─────────────────────
+
+async function syncCompleted() {
+    const now = Date.now();
+    if (now - lastCompletedSyncAt < SYNC_TTL) return;
+    lastCompletedSyncAt = now;
+
+    const hdrFilter  = encodeURIComponent("OverallProofOfDeliveryStatus eq 'C'");
+    const hdrData    = await s4Get(`/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryHeader?$filter=${hdrFilter}&$format=json`);
+    const hdrResults = hdrData?.d?.results ?? hdrData?.value ?? [];
+    if (!hdrResults.length) return;
+
+    const itemFilter  = encodeURIComponent("GoodsMovementStatus eq 'C' and ProofOfDeliveryStatus eq 'C' and ProofOfDeliveryRelevanceCode eq 'A'");
+    const itemData    = await s4Get(`/sap/opu/odata/sap/API_OUTBOUND_DELIVERY_SRV;v=0002/A_OutbDeliveryItem?$filter=${itemFilter}&$format=json`);
+    const itemResults = itemData?.d?.results ?? itemData?.value ?? [];
+
+    const s4HdrMap = new Map(hdrResults.map(h => [h.DeliveryDocument, h]));
+
+    const headerMap = new Map();
+    for (const item of itemResults) {
+        if (headerMap.has(item.DeliveryDocument)) continue;
+        const hdr       = s4HdrMap.get(item.DeliveryDocument) || {};
+        const s4PodDate = parseDate(hdr.ProofOfDeliveryDate);
+        const s4PodTime = parseTime(hdr.ProofOfDeliveryTime ?? hdr.ActualGoodsMovementTime);
+        headerMap.set(item.DeliveryDocument, {
+            deliveryDocument:               item.DeliveryDocument,
+            salesOrganization:              hdr.SalesOrganization             ?? '',
+            deliveryDate:                   parseDate(hdr.PlannedGoodsIssueDate ?? hdr.ActualGoodsMovementDate ?? hdr.DeliveryDate),
+            documentDate:                   parseDate(hdr.DocumentDate),
+            shipToParty:                    hdr.ShipToParty                   ?? '',
+            shipToPartyName:                hdr.ShipToPartyName               ?? hdr.ShipToPartyFullName ?? '',
+            shippingPoint:                  hdr.ShippingPoint                 ?? '',
+            overallPodStatus:               'C',
+            podStatusCriticality:           3,
+            actualGoodsMvmtDate:            parseDate(hdr.ActualGoodsMovementDate ?? hdr.ActualGoodsMvmtDate),
+            goodsMovementStatus:            hdr.OverallGoodsMovementStatus    ?? '',
+            goodsMovementStatusCriticality: goodsMovementStatusCriticality(hdr.OverallGoodsMovementStatus),
+            goodsMovementStatusText:        statusText(hdr.OverallGoodsMovementStatus),
+            overallPodStatusText:           'Completely processed',
+            podDate:                        s4PodDate ?? null,
+            podTime:                        s4PodTime ?? null,
+            isEditable:                     false,
+            podCompleted:                   true,
+        });
+    }
+
+    const itemsToUpsert = [];
+    for (const item of itemResults) {
+        let podmg = parseFloat(item.ActualDeliveryQuantity) || 0;
+        let grund = item.ProofOfDeliveryReasonCode ?? '';
+        try {
+            const tvpod = await fetchTvpodData(item.DeliveryDocument, item.DeliveryDocumentItem);
+            if (tvpod) {
+                podmg = parseFloat(tvpod.Podmg ?? tvpod.podmg ?? podmg);
+                grund = tvpod.Grund ?? tvpod.grund ?? grund;
+            }
+        } catch (e) { /* TVPOD might not exist for all items */ }
+
+        itemsToUpsert.push({
+            deliveryDocument:       item.DeliveryDocument,
+            deliveryDocumentItem:   item.DeliveryDocumentItem,
+            salesOrder:             item.SalesOrder               ?? item.ReferenceSDDocument ?? '',
+            material:               item.Material                 ?? '',
+            itemText:               item.DeliveryDocumentItemText ?? '',
+            actualDeliveryQuantity: parseFloat(item.ActualDeliveryQuantity) || 0,
+            deliveryQuantityUnit:   item.DeliveryQuantityUnit     ?? '',
+            podRelevanceCode:       item.ProofOfDeliveryRelevanceCode ?? '',
+            podStatus:              'C',
+            goodsMovementStatus:    item.GoodsMovementStatus      ?? '',
+            actualGoodsMvmtDate:    parseDate(item.ActualGoodsMvmtDate),
+            podQuantity:            podmg,
+            podQuantityUnit:        item.DeliveryQuantityUnit     ?? '',
+            podReasonCode:          grund,
+            qtyDiffnSalesUn:        Math.round(((parseFloat(item.ActualDeliveryQuantity) || 0) - podmg) * 1000) / 1000,
+        });
+    }
+
+    await UPSERT.into(DH).entries([...headerMap.values()]);
+    await UPSERT.into(DI).entries(itemsToUpsert);
+    console.log(`[POD] Synced ${headerMap.size} completed headers, ${itemsToUpsert.length} items from TVPOD`);
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 module.exports = cds.service.impl(async function () {
 
     this.before('READ', 'DeliveryHeaders', async (req) => {
-        try { await syncFromS4(); }
+        try {
+            const filterStr = JSON.stringify(req.query?.SELECT?.where ?? '');
+            if (filterStr.includes("'C'") && filterStr.includes('overallPodStatus')) {
+                await syncCompleted();
+            } else {
+                await syncFromS4();
+            }
+        }
         catch (err) { console.error('[POD] S/4 sync failed:', err.message); }
     });
 
