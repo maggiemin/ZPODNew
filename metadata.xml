@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml">
+    <edmx:Include Alias="Capabilities" Namespace="Org.OData.Capabilities.V1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+    <edmx:Include Alias="Common" Namespace="com.sap.vocabularies.Common.v1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Alias="Core" Namespace="Org.OData.Core.V1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/HTML5.xml">
+    <edmx:Include Alias="HTML5" Namespace="com.sap.vocabularies.HTML5.v1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/UI.xml">
+    <edmx:Include Alias="UI" Namespace="com.sap.vocabularies.UI.v1"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="PODService" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Core.Links">
+        <Collection>
+          <Record>
+            <PropertyValue Property="rel" String="author"/>
+            <PropertyValue Property="href" String="https://cap.cloud.sap"/>
+          </Record>
+        </Collection>
+      </Annotation>
+      <EntityContainer Name="EntityContainer">
+        <EntitySet Name="DeliveryItems" EntityType="PODService.DeliveryItems">
+          <NavigationPropertyBinding Path="podLines" Target="PodLines"/>
+        </EntitySet>
+        <EntitySet Name="PodLines" EntityType="PODService.PodLines"/>
+      </EntityContainer>
+      <EntityType Name="DeliveryItems">
+        <Key>
+          <PropertyRef Name="deliveryDocument"/>
+          <PropertyRef Name="deliveryDocumentItem"/>
+        </Key>
+        <Property Name="deliveryDocument" Type="Edm.String" MaxLength="10" Nullable="false"/>
+        <Property Name="deliveryDocumentItem" Type="Edm.String" MaxLength="6" Nullable="false"/>
+        <Property Name="salesOrganization" Type="Edm.String" MaxLength="4"/>
+        <Property Name="salesOrder" Type="Edm.String" MaxLength="10"/>
+        <Property Name="deliveryDate" Type="Edm.Date"/>
+        <Property Name="shipToParty" Type="Edm.String" MaxLength="10"/>
+        <Property Name="material" Type="Edm.String" MaxLength="40"/>
+        <Property Name="itemText" Type="Edm.String" MaxLength="40"/>
+        <Property Name="actualDeliveryQuantity" Type="Edm.Decimal" Precision="13" Scale="3"/>
+        <Property Name="deliveryQuantityUnit" Type="Edm.String" MaxLength="3"/>
+        <Property Name="podRelevanceCode" Type="Edm.String" MaxLength="1"/>
+        <Property Name="podStatus" Type="Edm.String" MaxLength="1"/>
+        <Property Name="podDate" Type="Edm.Date"/>
+        <Property Name="podTime" Type="Edm.TimeOfDay"/>
+        <Property Name="podStatusCriticality" Type="Edm.Int32"/>
+        <Property Name="actualGoodsMvmtDate" Type="Edm.Date"/>
+        <Property Name="shippingPoint" Type="Edm.String" MaxLength="4"/>
+        <Property Name="goodsMovementStatus" Type="Edm.String" MaxLength="1"/>
+        <NavigationProperty Name="podLines" Type="Collection(PODService.PodLines)">
+          <OnDelete Action="Cascade"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="PodLines">
+        <Key>
+          <PropertyRef Name="deliveryDocument"/>
+          <PropertyRef Name="deliveryDocumentItem"/>
+          <PropertyRef Name="lineNumber"/>
+        </Key>
+        <Property Name="deliveryDocument" Type="Edm.String" MaxLength="10" Nullable="false"/>
+        <Property Name="deliveryDocumentItem" Type="Edm.String" MaxLength="6" Nullable="false"/>
+        <Property Name="lineNumber" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="podQuantity" Type="Edm.Decimal" Precision="13" Scale="3"/>
+        <Property Name="podQuantityUnit" Type="Edm.String" MaxLength="3"/>
+        <Property Name="podReasonCode" Type="Edm.String" MaxLength="4"/>
+      </EntityType>
+      <ComplexType Name="return_PODService_DeliveryItems_submitPOD">
+        <Property Name="success" Type="Edm.Boolean"/>
+        <Property Name="message" Type="Edm.String"/>
+      </ComplexType>
+      <Action Name="submitPOD" IsBound="true">
+        <Parameter Name="in" Type="PODService.DeliveryItems"/>
+        <ReturnType Type="PODService.return_PODService_DeliveryItems_submitPOD"/>
+      </Action>
+      <Annotations Target="PODService.DeliveryItems">
+        <Annotation Term="UI.SelectionFields">
+          <Collection>
+            <PropertyPath>deliveryDocument</PropertyPath>
+            <PropertyPath>shipToParty</PropertyPath>
+            <PropertyPath>podStatus</PropertyPath>
+          </Collection>
+        </Annotation>
+        <Annotation Term="UI.LineItem">
+          <Collection>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="deliveryDocument"/>
+              <PropertyValue Property="Label" String="Delivery Doc"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="deliveryDocumentItem"/>
+              <PropertyValue Property="Label" String="Item"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="salesOrder"/>
+              <PropertyValue Property="Label" String="Sales Order"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="shipToParty"/>
+              <PropertyValue Property="Label" String="Ship-to Party"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="material"/>
+              <PropertyValue Property="Label" String="Material"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="itemText"/>
+              <PropertyValue Property="Label" String="Description"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="actualDeliveryQuantity"/>
+              <PropertyValue Property="Label" String="Delivered Qty"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="deliveryQuantityUnit"/>
+              <PropertyValue Property="Label" String="Unit"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="podStatus"/>
+              <PropertyValue Property="Label" String="POD Status"/>
+              <PropertyValue Property="Criticality" Path="podStatusCriticality"/>
+              <PropertyValue Property="CriticalityRepresentation" EnumMember="UI.CriticalityRepresentationType/WithIcon"/>
+            </Record>
+          </Collection>
+        </Annotation>
+        <Annotation Term="UI.HeaderInfo">
+          <Record Type="UI.HeaderInfoType">
+            <PropertyValue Property="TypeName" String="Delivery"/>
+            <PropertyValue Property="TypeNamePlural" String="Deliveries"/>
+            <PropertyValue Property="Title">
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="deliveryDocument"/>
+              </Record>
+            </PropertyValue>
+            <PropertyValue Property="Description">
+              <Record Type="UI.DataField">
+                <PropertyValue Property="Value" Path="itemText"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="UI.HeaderFacets">
+          <Collection>
+            <Record Type="UI.ReferenceFacet">
+              <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#Context"/>
+            </Record>
+          </Collection>
+        </Annotation>
+        <Annotation Term="UI.FieldGroup" Qualifier="Context">
+          <Record Type="UI.FieldGroupType">
+            <PropertyValue Property="Data">
+              <Collection>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="deliveryDocument"/>
+                  <PropertyValue Property="Label" String="Delivery Doc"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="salesOrder"/>
+                  <PropertyValue Property="Label" String="Sales Order"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="shipToParty"/>
+                  <PropertyValue Property="Label" String="Ship-to Party"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="material"/>
+                  <PropertyValue Property="Label" String="Material"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="itemText"/>
+                  <PropertyValue Property="Label" String="Description"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="actualDeliveryQuantity"/>
+                  <PropertyValue Property="Label" String="Delivered Qty"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="deliveryQuantityUnit"/>
+                  <PropertyValue Property="Label" String="Unit"/>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="UI.Identification">
+          <Collection>
+            <Record Type="UI.DataFieldForAction">
+              <PropertyValue Property="Label" String="Submit POD"/>
+              <PropertyValue Property="Action" String="PODService.DeliveryItems/submitPOD"/>
+            </Record>
+          </Collection>
+        </Annotation>
+        <Annotation Term="UI.Facets">
+          <Collection>
+            <Record Type="UI.CollectionFacet">
+              <PropertyValue Property="ID" String="OverallPOD"/>
+              <PropertyValue Property="Label" String="Overall POD"/>
+              <PropertyValue Property="Facets">
+                <Collection>
+                  <Record Type="UI.ReferenceFacet">
+                    <PropertyValue Property="ID" String="PODDetailsSection"/>
+                    <PropertyValue Property="Label" String="Proof of Delivery"/>
+                    <PropertyValue Property="Target" AnnotationPath="@UI.FieldGroup#POD"/>
+                  </Record>
+                  <Record Type="UI.ReferenceFacet">
+                    <PropertyValue Property="ID" String="AllItemsSection"/>
+                    <PropertyValue Property="Label" String="All Items"/>
+                    <PropertyValue Property="Target" AnnotationPath="podLines/@UI.LineItem"/>
+                  </Record>
+                </Collection>
+              </PropertyValue>
+            </Record>
+          </Collection>
+        </Annotation>
+        <Annotation Term="UI.FieldGroup" Qualifier="POD">
+          <Record Type="UI.FieldGroupType">
+            <PropertyValue Property="Data">
+              <Collection>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="actualGoodsMvmtDate"/>
+                  <PropertyValue Property="Label" String="Actual Goods Mvmt Date"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="shippingPoint"/>
+                  <PropertyValue Property="Label" String="Shipping Point"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="goodsMovementStatus"/>
+                  <PropertyValue Property="Label" String="Goods Mvmt Status"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="podDate"/>
+                  <PropertyValue Property="Label" String="POD Date"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="podTime"/>
+                  <PropertyValue Property="Label" String="POD Time"/>
+                </Record>
+                <Record Type="UI.DataField">
+                  <PropertyValue Property="Value" Path="podStatus"/>
+                  <PropertyValue Property="Label" String="POD Status"/>
+                  <PropertyValue Property="Criticality" Path="podStatusCriticality"/>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="PODService.EntityContainer/DeliveryItems">
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="Updatable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record Type="Capabilities.DeleteRestrictionsType">
+            <PropertyValue Property="Deletable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record Type="Capabilities.NavigationRestrictionsType">
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="podLines"/>
+                  <PropertyValue Property="ReadRestrictions">
+                    <Record Type="Capabilities.ReadRestrictionsType">
+                      <PropertyValue Property="ReadByKeyRestrictions">
+                        <Record Type="Capabilities.ReadByKeyRestrictionsType">
+                          <PropertyValue Property="Readable" Bool="false"/>
+                        </Record>
+                      </PropertyValue>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/deliveryDocument">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/deliveryDocumentItem">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/salesOrganization">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/salesOrder">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/deliveryDate">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/shipToParty">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/material">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/itemText">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/actualDeliveryQuantity">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/deliveryQuantityUnit">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/podRelevanceCode">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/podStatus">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/podStatusCriticality">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/actualGoodsMvmtDate">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/shippingPoint">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.DeliveryItems/goodsMovementStatus">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.PodLines">
+        <Annotation Term="UI.LineItem">
+          <Collection>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="lineNumber"/>
+              <PropertyValue Property="Label" String="Line"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="podQuantity"/>
+              <PropertyValue Property="Label" String="POD Quantity"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="podQuantityUnit"/>
+              <PropertyValue Property="Label" String="Unit"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+            <Record Type="UI.DataField">
+              <PropertyValue Property="Value" Path="podReasonCode"/>
+              <PropertyValue Property="Label" String="Reason Code"/>
+              <Annotation Term="UI.Importance" EnumMember="UI.ImportanceType/High"/>
+            </Record>
+          </Collection>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="PODService.EntityContainer/PodLines">
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="Updatable" Bool="true"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeleteRestrictions">
+          <Record Type="Capabilities.DeleteRestrictionsType">
+            <PropertyValue Property="Deletable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="PODService.PodLines/deliveryDocument">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.PodLines/deliveryDocumentItem">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.PodLines/lineNumber">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+      <Annotations Target="PODService.PodLines/podQuantityUnit">
+        <Annotation Term="Core.Immutable" Bool="true"/>
+      </Annotations>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

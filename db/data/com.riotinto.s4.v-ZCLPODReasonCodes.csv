@@ -1,0 +1,10 @@
+code,description
+0001,Damaged goods
+0002,Stolen goods
+0003,Surplus of goods
+0004,Lost goods
+0005,Shrinkage
+0030,Temperature increase
+0031,Temperature decrease
+DFG1,Overdelivery reason unknown
+DFG2,Underdelivery reason unknown

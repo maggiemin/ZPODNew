@@ -1,0 +1,46 @@
+_schema-version: '3.1'
+ID: zcpeldelivpod
+version: 1.0.0
+description: Proof of Delivery App
+
+modules:
+  - name: zcpeldelivpod-srv
+    type: nodejs
+    path: .
+    build-parameters:
+      builder: custom
+      commands:
+        - npm ci --production
+      supported-platforms: []
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 512M
+    properties:
+      NODE_ENV: production
+      SCC_LOCATION_ID: rise-backend
+    requires:
+      - name: zcpeldelivpod-auth
+      - name: zcpeldelivpod-connectivity
+      - name: zcpeldelivpod-destination
+
+resources:
+  - name: zcpeldelivpod-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: ams
+      service-plan: standard
+      config:
+        appName: zcpeldelivpod
+
+  - name: zcpeldelivpod-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
+      service-plan: lite
+
+  - name: zcpeldelivpod-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
